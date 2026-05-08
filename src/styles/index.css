@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #2f3a2d;
+  background: #fffaf0;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(122, 168, 116, 0.16), transparent 30rem),
+    linear-gradient(180deg, #fffaf0 0%, #f6f1e5 100%);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer components {
+  .app-panel {
+    @apply rounded-[8px] border border-clay-100/70 bg-white/82 shadow-soft backdrop-blur;
+  }
+
+  .field {
+    @apply min-h-12 w-full rounded-[8px] border border-leaf-100 bg-white px-3 text-base text-stone-800 outline-none transition focus:border-leaf-400 focus:ring-4 focus:ring-leaf-100;
+  }
+
+  .field-label {
+    @apply text-sm font-semibold text-stone-700;
+  }
+
+  .chip {
+    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-[8px] border border-leaf-100 bg-white px-3 text-sm font-semibold text-stone-700 transition;
+  }
+
+  .chip-active {
+    @apply border-leaf-400 bg-leaf-100 text-leaf-700;
+  }
+
+  .primary-button {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-[8px] bg-leaf-600 px-4 text-base font-bold text-white shadow-sm transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .secondary-button {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-[8px] border border-leaf-200 bg-white px-4 text-base font-bold text-leaf-700 transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .danger-button {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-[8px] border border-red-200 bg-red-50 px-3 text-sm font-bold text-red-700 transition active:scale-[0.99];
+  }
+}

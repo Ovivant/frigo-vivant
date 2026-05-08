@@ -1,0 +1,17 @@
+{
+  "name": "Frigo Vivant",
+  "short_name": "Frigo",
+  "description": "Gestion locale des aliments, repas et courses, sans compte.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffaf0",
+  "theme_color": "#7aa874",
+  "icons": [
+    {
+      "src": "/app-icon.svg",
+      "sizes": "128x128",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

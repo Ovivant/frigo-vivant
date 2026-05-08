@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Frigo Vivant">
+  <rect width="128" height="128" rx="28" fill="#f7efd8"/>
+  <path d="M39 24h50a8 8 0 0 1 8 8v72a8 8 0 0 1-8 8H39a8 8 0 0 1-8-8V32a8 8 0 0 1 8-8Z" fill="#fffaf0" stroke="#476f43" stroke-width="6"/>
+  <path d="M31 58h66" stroke="#476f43" stroke-width="6" stroke-linecap="round"/>
+  <path d="M47 38h10M47 74h10" stroke="#b37a5c" stroke-width="6" stroke-linecap="round"/>
+  <path d="M75 80c12-10 16-23 11-37-14 4-23 12-27 24-3 10 3 18 16 13Z" fill="#7aa874"/>
+  <path d="M70 72c5-8 10-15 17-22" stroke="#f3f7ef" stroke-width="5" stroke-linecap="round"/>
+</svg>
