@@ -10,6 +10,18 @@ import { isoInDays } from './lib/date';
 import { newId } from './lib/format';
 import { generateMealSuggestions } from './lib/meals';
 import { exportAppData, loadAppData, parseImportedAppData, saveAppData } from './lib/storage';
+import type {
+  AppData,
+  AppView,
+  ConsumptionAction,
+  ConsumptionHistoryItem,
+  FoodCategory,
+  FoodItem,
+  MealSuggestion,
+  ShoppingItem,
+  StorageIcon,
+  UserProfile,
+} from './types';
 
 const categoryFromIngredient = (name: string): FoodCategory => {
   const lower = name.toLowerCase();
@@ -26,6 +38,7 @@ const unitFromCategory = (category: FoodCategory) => {
   return 'article';
 };
 
+const defaultExpirationDays = (category: FoodCategory) => {
   if (category === 'Épicerie sèche') return 120;
   if (category === 'Surgelé') return 90;
   if (category === 'Fruits & légumes') return 6;
