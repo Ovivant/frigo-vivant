@@ -13,6 +13,8 @@ export type FoodStatus = 'fermé' | 'ouvert' | 'entamé';
 export type FoodOwner = 'moi' | 'colocataire' | 'commun' | 'non défini';
 export type ShoppingPriority = 'haute' | 'moyenne' | 'douce';
 export type StorageIcon = 'fridge' | 'shelves' | 'jar' | 'snowflake' | 'box';
+export type InventorySort = 'intelligent' | 'date' | 'nom' | 'favoris' | 'ajout récent';
+export type ConsumptionAction = 'consommé' | 'jeté' | 'cuisiné';
 
 export type HealthCue =
   | 'Repas simple et équilibré'
@@ -72,6 +74,20 @@ export interface FoodItem {
   owner: FoodOwner;
   purchasePrice?: number;
   notes: string;
+  isFavorite?: boolean;
+  reminderDaysBefore?: number;
+}
+
+export interface ConsumptionHistoryItem {
+  id: string;
+  foodName: string;
+  category: FoodCategory;
+  quantity: number;
+  unit: string;
+  action: ConsumptionAction;
+  owner: FoodOwner;
+  happenedAt: string;
+  reason?: string;
 }
 
 export interface MealSuggestion {
@@ -132,6 +148,7 @@ export interface AppData {
   mealSuggestions: MealSuggestion[];
   shoppingItems: ShoppingItem[];
   mealPlan: MealPlanItem[];
+  consumptionHistory: ConsumptionHistoryItem[];
   storePriceRecords: StorePriceRecord[];
   updatedAt: string;
 }

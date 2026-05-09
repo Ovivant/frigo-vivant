@@ -2,39 +2,63 @@ import { createDefaultData } from '../data/defaultData';
 import type { AppData } from '../types';
 
 const STORAGE_KEY = 'frigo-vivant:v1';
+const BACKUP_STORAGE_KEY = 'frigo-vivant:v1:backup';
+const SESSION_FALLBACK_KEY = 'frigo-vivant:v1:session';
+
+const normalizeAppData = (parsed: Partial<AppData>): AppData => {
+  const defaults = createDefaultData();
+
+  return {
+    ...defaults,
+    ...parsed,
+    profile: { ...defaults.profile, ...parsed.profile },
+    storageLocations: parsed.storageLocations?.length ? parsed.storageLocations : defaults.storageLocations,
+    foods: parsed.foods ?? defaults.foods,
+    shoppingItems: parsed.shoppingItems ?? defaults.shoppingItems,
+    mealSuggestions: parsed.mealSuggestions ?? [],
+    mealPlan: parsed.mealPlan ?? [],
+    consumptionHistory: parsed.consumptionHistory ?? [],
+    storePriceRecords: parsed.storePriceRecords ?? [],
+    updatedAt: parsed.updatedAt ?? defaults.updatedAt,
+  };
+};
+
+const parseStoredData = (raw: string | null): AppData | null => {
+  if (!raw) return null;
+
+  try {
+    return normalizeAppData(JSON.parse(raw) as Partial<AppData>);
+  } catch {
+    return null;
+  }
+};
 
 export const loadAppData = (): AppData => {
   if (typeof window === 'undefined') return createDefaultData();
 
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) return createDefaultData();
+  const primary = parseStoredData(window.localStorage.getItem(STORAGE_KEY));
+  const backup = parseStoredData(window.localStorage.getItem(BACKUP_STORAGE_KEY));
+  const sessionFallback = parseStoredData(window.sessionStorage.getItem(SESSION_FALLBACK_KEY));
 
-  try {
-    const parsed = JSON.parse(raw) as Partial<AppData>;
-    const defaults = createDefaultData();
+  const candidates = [primary, backup, sessionFallback].filter(Boolean) as AppData[];
+  if (candidates.length) return candidates.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
 
-    return {
-      ...defaults,
-      ...parsed,
-      profile: { ...defaults.profile, ...parsed.profile },
-      storageLocations: parsed.storageLocations?.length
-        ? parsed.storageLocations
-        : defaults.storageLocations,
-      foods: parsed.foods ?? defaults.foods,
-      shoppingItems: parsed.shoppingItems ?? defaults.shoppingItems,
-      mealSuggestions: parsed.mealSuggestions ?? [],
-      mealPlan: parsed.mealPlan ?? [],
-      storePriceRecords: parsed.storePriceRecords ?? [],
-      updatedAt: parsed.updatedAt ?? defaults.updatedAt,
-    };
-  } catch {
-    return createDefaultData();
-  }
+  return createDefaultData();
 };
 
-export const saveAppData = (data: AppData) => {
-  if (typeof window === 'undefined') return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...data, updatedAt: new Date().toISOString() }));
+export const saveAppData = (data: AppData): AppData => {
+  const nextData = { ...data, updatedAt: new Date().toISOString() };
+  if (typeof window === 'undefined') return nextData;
+
+  const payload = JSON.stringify(nextData);
+  try {
+    window.localStorage.setItem(STORAGE_KEY, payload);
+    window.localStorage.setItem(BACKUP_STORAGE_KEY, payload);
+  } catch {
+    window.sessionStorage.setItem(SESSION_FALLBACK_KEY, payload);
+  }
+
+  return nextData;
 };
 
 export const exportAppData = (data: AppData) => {
@@ -59,8 +83,7 @@ export const parseImportedAppData = async (file: File): Promise<AppData> => {
   }
 
   return {
-    ...createDefaultData(),
-    ...parsed,
+    ...normalizeAppData(parsed),
     updatedAt: new Date().toISOString(),
   };
 };

@@ -37,6 +37,8 @@ export function FoodForm({ food, profile, locations, onCancel, onSave }: FoodFor
       status: 'fermé',
       owner: profile.defaultOwner,
       notes: '',
+      isFavorite: false,
+      reminderDaysBefore: 3,
     },
   );
 
@@ -171,6 +173,27 @@ export function FoodForm({ food, profile, locations, onCancel, onSave }: FoodFor
         <label className="chip justify-start">
           <input type="checkbox" checked={draft.isLocal} onChange={(event) => update('isLocal', event.target.checked)} />
           Local
+        </label>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <label className="chip justify-start">
+          <input type="checkbox" checked={Boolean(draft.isFavorite)} onChange={(event) => update('isFavorite', event.target.checked)} />
+          Favori
+        </label>
+        <label className="field-label">
+          Rappel avant date
+          <select
+            className="field mt-1"
+            value={draft.reminderDaysBefore ?? 3}
+            onChange={(event) => update('reminderDaysBefore', Number(event.target.value))}
+          >
+            <option value={1}>1 jour</option>
+            <option value={2}>2 jours</option>
+            <option value={3}>3 jours</option>
+            <option value={7}>7 jours</option>
+            <option value={14}>14 jours</option>
+          </select>
         </label>
       </div>
 

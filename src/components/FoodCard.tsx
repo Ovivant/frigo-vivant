@@ -1,4 +1,4 @@
-import { Check, Edit3, MoveRight, Snowflake, Trash2 } from 'lucide-react';
+import { Check, Copy, Edit3, Minus, MoveRight, Plus, Snowflake, Star, Trash2 } from 'lucide-react';
 import type { FoodItem, StorageLocation } from '../types';
 import { getUrgencyLabel, getUrgencyLevel, urgencyClasses } from '../lib/date';
 import { foodHealthCue } from '../lib/health';
@@ -15,9 +15,24 @@ interface FoodCardProps {
   onFreeze: (foodId: string) => void;
   onDiscard: (foodId: string) => void;
   onMove: (foodId: string, locationId: string) => void;
+  onDuplicate: (food: FoodItem) => void;
+  onToggleFavorite: (foodId: string) => void;
+  onAdjustQuantity: (foodId: string, delta: number) => void;
 }
 
-export function FoodCard({ food, profile, locations, onEdit, onConsume, onFreeze, onDiscard, onMove }: FoodCardProps) {
+export function FoodCard({
+  food,
+  profile,
+  locations,
+  onEdit,
+  onConsume,
+  onFreeze,
+  onDiscard,
+  onMove,
+  onDuplicate,
+  onToggleFavorite,
+  onAdjustQuantity,
+}: FoodCardProps) {
   const location = locations.find((item) => item.id === food.storageLocationId);
   const urgency = getUrgencyLevel(food.expirationDate);
   const cue = foodHealthCue(food, profile);
@@ -32,11 +47,33 @@ export function FoodCard({ food, profile, locations, onEdit, onConsume, onFreeze
               {formatQuantity(food.quantity, food.unit)} · {food.category}
             </p>
           </div>
-          <span className="rounded-[8px] bg-white/70 px-2 py-1 text-xs font-black">{getUrgencyLabel(food.expirationDate)}</span>
+          <div className="flex flex-col items-end gap-2">
+            <button
+              type="button"
+              className={`grid h-9 w-9 place-items-center rounded-[8px] bg-white/70 ${food.isFavorite ? 'text-clay-500' : 'text-stone-400'}`}
+              onClick={() => onToggleFavorite(food.id)}
+              aria-label={food.isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            >
+              <Star aria-hidden className="h-5 w-5" fill={food.isFavorite ? 'currentColor' : 'none'} />
+            </button>
+            <span className="rounded-[8px] bg-white/70 px-2 py-1 text-xs font-black">{getUrgencyLabel(food.expirationDate)}</span>
+          </div>
         </div>
       </div>
 
       <div className="space-y-3 px-4 py-3">
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-[8px] border border-leaf-100 bg-oat-50 p-2">
+          <button type="button" className="secondary-button !min-h-10 !px-3" onClick={() => onAdjustQuantity(food.id, -1)} aria-label="Diminuer la quantité">
+            <Minus aria-hidden className="h-4 w-4" />
+          </button>
+          <p className="text-center text-sm font-black text-stone-800">
+            {formatQuantity(food.quantity, food.unit)}
+          </p>
+          <button type="button" className="secondary-button !min-h-10 !px-3" onClick={() => onAdjustQuantity(food.id, 1)} aria-label="Augmenter la quantité">
+            <Plus aria-hidden className="h-4 w-4" />
+          </button>
+        </div>
+
         <div className="grid grid-cols-2 gap-2 text-sm text-stone-600">
           <p>
             <span className="font-bold text-stone-800">Lieu</span>
@@ -76,6 +113,10 @@ export function FoodCard({ food, profile, locations, onEdit, onConsume, onFreeze
           <button type="button" className="secondary-button !min-h-11 !text-sm" onClick={() => onEdit(food)}>
             <Edit3 aria-hidden className="h-4 w-4" />
             Modifier
+          </button>
+          <button type="button" className="secondary-button !min-h-11 !text-sm" onClick={() => onDuplicate(food)}>
+            <Copy aria-hidden className="h-4 w-4" />
+            Dupliquer
           </button>
           <button type="button" className="secondary-button !min-h-11 !text-sm" onClick={() => onConsume(food.id)}>
             <Check aria-hidden className="h-4 w-4" />

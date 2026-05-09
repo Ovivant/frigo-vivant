@@ -83,6 +83,8 @@ const defaultFoods = (): FoodItem[] => [
     owner: 'moi',
     purchasePrice: 2.8,
     notes: 'À finir rapidement en poêlée ou soupe.',
+    isFavorite: true,
+    reminderDaysBefore: 2,
   },
   {
     id: 'food-oeufs',
@@ -101,6 +103,8 @@ const defaultFoods = (): FoodItem[] => [
     owner: 'commun',
     purchasePrice: 3.4,
     notes: '',
+    isFavorite: true,
+    reminderDaysBefore: 3,
   },
   {
     id: 'food-courgettes',
@@ -118,6 +122,7 @@ const defaultFoods = (): FoodItem[] => [
     status: 'entamé',
     owner: 'moi',
     notes: 'Une courgette déjà coupée.',
+    reminderDaysBefore: 2,
   },
   {
     id: 'food-tofu',
@@ -136,6 +141,8 @@ const defaultFoods = (): FoodItem[] => [
     owner: 'moi',
     purchasePrice: 2.95,
     notes: '',
+    isFavorite: false,
+    reminderDaysBefore: 3,
   },
   {
     id: 'food-lentilles',
@@ -153,6 +160,8 @@ const defaultFoods = (): FoodItem[] => [
     status: 'ouvert',
     owner: 'moi',
     notes: 'Base protéinée pratique.',
+    isFavorite: true,
+    reminderDaysBefore: 7,
   },
   {
     id: 'food-riz',
@@ -170,6 +179,8 @@ const defaultFoods = (): FoodItem[] => [
     status: 'ouvert',
     owner: 'moi',
     notes: 'Sans gluten, bon fond de placard.',
+    isFavorite: true,
+    reminderDaysBefore: 10,
   },
   {
     id: 'food-chevre',
@@ -188,6 +199,7 @@ const defaultFoods = (): FoodItem[] => [
     owner: 'commun',
     purchasePrice: 4.2,
     notes: 'À utiliser ponctuellement, lactose à limiter.',
+    reminderDaysBefore: 2,
   },
   {
     id: 'food-pommes',
@@ -205,6 +217,7 @@ const defaultFoods = (): FoodItem[] => [
     status: 'fermé',
     owner: 'moi',
     notes: '',
+    reminderDaysBefore: 4,
   },
   {
     id: 'food-poele-surgele',
@@ -222,6 +235,8 @@ const defaultFoods = (): FoodItem[] => [
     status: 'fermé',
     owner: 'moi',
     notes: 'Secours rapide pour soir pressé.',
+    isFavorite: false,
+    reminderDaysBefore: 14,
   },
 ];
 
@@ -275,6 +290,7 @@ export const createDefaultData = (): AppData => ({
   mealSuggestions: [],
   shoppingItems: defaultShoppingItems(),
   mealPlan: [],
+  consumptionHistory: [],
   storePriceRecords: [],
   updatedAt: nowIso(),
 });

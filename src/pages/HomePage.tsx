@@ -1,6 +1,6 @@
 import { ArrowRight, ShoppingBasket, Sparkles } from 'lucide-react';
-import type { FoodItem, MealSuggestion, UserProfile } from '../types';
-import { sortByExpiration } from '../lib/date';
+import type { ConsumptionHistoryItem, FoodItem, MealSuggestion, UserProfile } from '../types';
+import { daysUntil, sortByExpiration } from '../lib/date';
 import { foodHealthCue } from '../lib/health';
 import { StatusPill } from '../components/StatusPill';
 
@@ -9,13 +9,15 @@ interface HomePageProps {
   foods: FoodItem[];
   mealSuggestions: MealSuggestion[];
   shoppingCount: number;
+  consumptionHistory: ConsumptionHistoryItem[];
   onGoInventory: () => void;
   onGoMeals: () => void;
   onGoShopping: () => void;
 }
 
-export function HomePage({ profile, foods, mealSuggestions, shoppingCount, onGoInventory, onGoMeals, onGoShopping }: HomePageProps) {
+export function HomePage({ profile, foods, mealSuggestions, shoppingCount, consumptionHistory, onGoInventory, onGoMeals, onGoShopping }: HomePageProps) {
   const priorityFoods = sortByExpiration(foods).slice(0, 4);
+  const reminderFoods = sortByExpiration(foods).filter((food) => daysUntil(food.expirationDate) <= (food.reminderDaysBefore ?? 3));
   const ideaLabel = (type: MealSuggestion['type']) => {
     if (type === 'Repas express') return 'Rapide';
     if (type === 'Repas équilibré') return 'Équilibrée';
@@ -78,6 +80,24 @@ export function HomePage({ profile, foods, mealSuggestions, shoppingCount, onGoI
       </section>
 
       <section className="app-panel p-4">
+        <h2 className="text-lg font-black text-stone-950">Rappels péremption</h2>
+        {reminderFoods.length ? (
+          <div className="mt-3 space-y-2">
+            {reminderFoods.slice(0, 3).map((food) => (
+              <button key={food.id} type="button" className="w-full rounded-[8px] border border-orange-200 bg-orange-50 px-3 py-3 text-left" onClick={onGoInventory}>
+                <p className="font-black text-orange-900">{food.name}</p>
+                <p className="text-sm text-orange-800">
+                  Date {food.dateType} {food.expirationDate} · rappel {food.reminderDaysBefore ?? 3} j
+                </p>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 text-sm leading-6 text-stone-600">Rien d’urgent pour le moment.</p>
+        )}
+      </section>
+
+      <section className="app-panel p-4">
         <h2 className="text-lg font-black text-stone-950">3 idées de repas</h2>
         <div className="mt-3 grid gap-3">
           {ideas.map((idea) => (
@@ -98,6 +118,19 @@ export function HomePage({ profile, foods, mealSuggestions, shoppingCount, onGoI
           <ShoppingBasket aria-hidden className="h-5 w-5" />
         </button>
       </section>
+
+      {consumptionHistory.length ? (
+        <section className="app-panel p-4">
+          <h2 className="text-lg font-black text-stone-950">Consommé récemment</h2>
+          <div className="mt-3 space-y-2">
+            {consumptionHistory.slice(0, 3).map((item) => (
+              <p key={item.id} className="rounded-[8px] border border-leaf-100 bg-white px-3 py-2 text-sm text-stone-700">
+                <span className="font-black">{item.foodName}</span> · {item.action}
+              </p>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }

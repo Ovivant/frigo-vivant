@@ -10,7 +10,6 @@ import { isoInDays } from './lib/date';
 import { newId } from './lib/format';
 import { generateMealSuggestions } from './lib/meals';
 import { exportAppData, loadAppData, parseImportedAppData, saveAppData } from './lib/storage';
-import type { AppData, AppView, FoodCategory, FoodItem, MealSuggestion, ShoppingItem, StorageIcon, UserProfile } from './types';
 
 const categoryFromIngredient = (name: string): FoodCategory => {
   const lower = name.toLowerCase();
@@ -25,6 +24,12 @@ const unitFromCategory = (category: FoodCategory) => {
   if (category === 'Épicerie sèche') return 'paquet';
   if (category === 'Protéines') return 'portion';
   return 'article';
+};
+
+  if (category === 'Épicerie sèche') return 120;
+  if (category === 'Surgelé') return 90;
+  if (category === 'Fruits & légumes') return 6;
+  return 7;
 };
 
 function App() {
@@ -44,7 +49,7 @@ function App() {
   const shoppingCount = useMemo(() => data.shoppingItems.filter((item) => !item.purchased).length, [data.shoppingItems]);
 
   const updateData = (recipe: (current: AppData) => AppData) => {
-    setData((current) => ({ ...recipe(current), updatedAt: new Date().toISOString() }));
+    setData((current) => saveAppData(recipe(current)));
   };
 
   const saveFood = (food: FoodItem) => {
@@ -57,8 +62,112 @@ function App() {
     });
   };
 
-  const removeFood = (foodId: string) => {
-    updateData((current) => ({ ...current, foods: current.foods.filter((food) => food.id !== foodId) }));
+  const recordFoodAction = (foodId: string, action: ConsumptionAction, reason?: string) => {
+    updateData((current) => {
+      const food = current.foods.find((item) => item.id === foodId);
+      if (!food) return current;
+
+      const historyItem: ConsumptionHistoryItem = {
+        id: newId('history'),
+        foodName: food.name,
+        category: food.category,
+        quantity: food.quantity,
+        unit: food.unit,
+        action,
+        owner: food.owner,
+        happenedAt: new Date().toISOString(),
+        reason,
+      };
+
+      return {
+        ...current,
+        foods: current.foods.filter((item) => item.id !== foodId),
+        consumptionHistory: [historyItem, ...current.consumptionHistory].slice(0, 80),
+      };
+    });
+  };
+
+  const duplicateFood = (food: FoodItem) => {
+    saveFood({
+      ...food,
+      id: newId('food'),
+      addedAt: new Date().toISOString(),
+      notes: food.notes ? `${food.notes} Copié depuis un favori ou un achat récent.` : 'Copié depuis un aliment existant.',
+    });
+  };
+
+  const toggleFavorite = (foodId: string) => {
+    updateData((current) => ({
+      ...current,
+      foods: current.foods.map((food) => (food.id === foodId ? { ...food, isFavorite: !food.isFavorite } : food)),
+    }));
+  };
+
+  const adjustQuantity = (foodId: string, delta: number) => {
+    updateData((current) => ({
+      ...current,
+      foods: current.foods.map((food) =>
+        food.id === foodId ? { ...food, quantity: Math.max(0, Math.round((food.quantity + delta) * 10) / 10) } : food,
+      ),
+    }));
+  };
+
+  const createQuickFood = (name: string): FoodItem => {
+    const category = categoryFromIngredient(name);
+    const storage = data.storageLocations.find((location) => location.id === (category === 'Épicerie sèche' ? 'placards' : 'frigo')) ?? data.storageLocations[0];
+
+    return {
+      id: newId('food'),
+      name,
+      category,
+      quantity: 1,
+      unit: unitFromCategory(category),
+      storageLocationId: storage?.id ?? 'frigo',
+      expirationDate: isoInDays(defaultExpirationDays(category)),
+      dateType: category === 'Épicerie sèche' ? 'DDM' : 'DLC',
+      addedAt: new Date().toISOString(),
+      isOrganic: data.profile.preferences.organic,
+      isLocal: data.profile.preferences.local,
+      store: data.profile.favoriteStores[0] ?? '',
+      status: 'fermé',
+      owner: data.profile.defaultOwner,
+      notes: 'Ajout rapide V2.1.',
+      isFavorite: false,
+      reminderDaysBefore: category === 'Épicerie sèche' ? 10 : 3,
+    };
+  };
+
+  const addQuickFood = (name: string) => {
+    saveFood(createQuickFood(name));
+  };
+
+  const addFoodsFromManualScan = (rawText: string) => {
+    const foods = rawText
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const date = line.match(/\d{4}-\d{2}-\d{2}/)?.[0];
+        const quantity = Number(line.match(/(?:^|\s)(\d+(?:[,.]\d+)?)(?:\s|$)/)?.[1]?.replace(',', '.') ?? 1);
+        const lowerLine = line.toLowerCase();
+        const location = data.storageLocations.find((item) => lowerLine.includes(item.name.toLowerCase())) ?? data.storageLocations.find((item) => item.id === 'frigo') ?? data.storageLocations[0];
+        const cleanedName = line
+          .replace(/\d{4}-\d{2}-\d{2}/g, '')
+          .replace(/(?:^|\s)\d+(?:[,.]\d+)?(?:\s|$)/, ' ')
+          .replace(new RegExp(data.storageLocations.map((item) => item.name).join('|'), 'gi'), '')
+          .trim();
+        const food = createQuickFood(cleanedName || line);
+
+        return {
+          ...food,
+          quantity,
+          storageLocationId: location?.id ?? food.storageLocationId,
+          expirationDate: date ?? food.expirationDate,
+          notes: 'Ajout via scan manuel simplifié.',
+        };
+      });
+
+    updateData((current) => ({ ...current, foods: [...foods, ...current.foods] }));
   };
 
   const freezeFood = (foodId: string) => {
@@ -185,6 +294,22 @@ function App() {
       ...current,
       foods: current.foods.filter((food) => !suggestion.foodItemIds.includes(food.id)),
       mealSuggestions: current.mealSuggestions.filter((item) => item.id !== suggestion.id),
+      consumptionHistory: [
+        ...current.foods
+          .filter((food) => suggestion.foodItemIds.includes(food.id))
+          .map((food) => ({
+            id: newId('history'),
+            foodName: food.name,
+            category: food.category,
+            quantity: food.quantity,
+            unit: food.unit,
+            action: 'cuisiné' as const,
+            owner: food.owner,
+            happenedAt: new Date().toISOString(),
+            reason: suggestion.title,
+          })),
+        ...current.consumptionHistory,
+      ].slice(0, 80),
       mealPlan: [
         {
           id: newId('meal'),
@@ -288,11 +413,11 @@ function App() {
 
   const importData = async (file: File) => {
     const imported = await parseImportedAppData(file);
-    setData(imported);
+    setData(saveAppData(imported));
   };
 
   const resetDemoData = () => {
-    setData(createDefaultData());
+    setData(saveAppData(createDefaultData()));
   };
 
   return (
@@ -303,6 +428,7 @@ function App() {
           foods={data.foods}
           mealSuggestions={data.mealSuggestions}
           shoppingCount={shoppingCount}
+          consumptionHistory={data.consumptionHistory}
           onGoInventory={() => setActiveView('inventory')}
           onGoMeals={() => setActiveView('meals')}
           onGoShopping={() => setActiveView('shopping')}
@@ -315,12 +441,18 @@ function App() {
           foods={data.foods}
           locations={data.storageLocations}
           onSaveFood={saveFood}
-          onConsume={removeFood}
+          onConsume={(foodId) => recordFoodAction(foodId, 'consommé')}
           onFreeze={freezeFood}
-          onDiscard={removeFood}
+          onDiscard={(foodId) => recordFoodAction(foodId, 'jeté')}
           onMoveFood={moveFood}
+          onDuplicateFood={duplicateFood}
+          onToggleFavorite={toggleFavorite}
+          onAdjustQuantity={adjustQuantity}
+          onQuickAddFood={addQuickFood}
+          onManualScan={addFoodsFromManualScan}
           onAddLocation={addLocation}
           onReactivateLocation={(locationId) => setLocationVisible(locationId, true)}
+          consumptionHistory={data.consumptionHistory}
         />
       ) : null}
 
