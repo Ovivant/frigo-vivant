@@ -7,6 +7,8 @@ const SESSION_FALLBACK_KEY = 'frigo-vivant:v1:session';
 
 const normalizeAppData = (parsed: Partial<AppData>): AppData => {
   const defaults = createDefaultData();
+  const parsedStores = parsed.stores ?? [];
+  const storesById = new Map([...defaults.stores, ...parsedStores].map((store) => [store.id, store]));
 
   return {
     ...defaults,
@@ -18,6 +20,7 @@ const normalizeAppData = (parsed: Partial<AppData>): AppData => {
     mealSuggestions: parsed.mealSuggestions ?? [],
     mealPlan: parsed.mealPlan ?? [],
     consumptionHistory: parsed.consumptionHistory ?? [],
+    stores: Array.from(storesById.values()),
     storePriceRecords: parsed.storePriceRecords ?? [],
     updatedAt: parsed.updatedAt ?? defaults.updatedAt,
   };

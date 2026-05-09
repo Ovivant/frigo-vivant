@@ -106,6 +106,7 @@ export function FoodCard({
         <p className="text-sm leading-6 text-stone-600">
           {food.store ? `Acheté chez ${food.store}` : 'Magasin non renseigné'}
           {food.purchasePrice ? ` · ${formatCurrency(food.purchasePrice)}` : ''}
+          {food.pricePerUnit ? ` · ${formatCurrency(food.pricePerUnit)}/kg` : ''}
           {food.notes ? ` · ${food.notes}` : ''}
         </p>
 

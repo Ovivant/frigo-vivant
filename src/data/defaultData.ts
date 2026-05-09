@@ -1,4 +1,4 @@
-import type { AppData, FoodItem, ShoppingItem, StorageLocation, UserProfile } from '../types';
+import type { AppData, FoodItem, GroceryStore, ShoppingItem, StorageLocation, UserProfile } from '../types';
 
 const isoInDays = (days: number) => {
   const date = new Date();
@@ -62,6 +62,69 @@ export const defaultStorageLocations: StorageLocation[] = [
     sortOrder: 4,
     isDefault: true,
     icon: 'snowflake',
+  },
+];
+
+export const defaultStores: GroceryStore[] = [
+  {
+    id: 'store-rayols',
+    name: 'Aux Fermes des Rayols',
+    shortName: 'Les Rayols',
+    address: '144 avenue du Général de Gaulle, 07140 Les Vans',
+    phone: '04 75 94 00 93',
+    email: 'caisserayols@orange.fr',
+    openingHours: {
+      monday: [],
+      tuesday: [
+        { open: '09:00', close: '12:30' },
+        { open: '16:00', close: '19:00' },
+      ],
+      wednesday: [
+        { open: '09:00', close: '12:30' },
+        { open: '16:00', close: '19:00' },
+      ],
+      thursday: [
+        { open: '09:00', close: '12:30' },
+        { open: '16:00', close: '19:00' },
+      ],
+      friday: [
+        { open: '09:00', close: '12:30' },
+        { open: '16:00', close: '19:00' },
+      ],
+      saturday: [{ open: '09:00', close: '13:00' }],
+      sunday: [],
+    },
+    notes: 'Horaires indicatifs, à vérifier les jours fériés.',
+  },
+  {
+    id: 'store-biocoop',
+    name: 'Biocoop',
+    shortName: 'Biocoop',
+    openingHours: {
+      monday: [],
+      tuesday: [],
+      wednesday: [],
+      thursday: [],
+      friday: [],
+      saturday: [],
+      sunday: [],
+    },
+    notes: 'Horaires à renseigner selon le magasin utilisé.',
+  },
+  {
+    id: 'store-la-fourche',
+    name: 'La Fourche',
+    shortName: 'La Fourche',
+    openingHours: {
+      monday: [],
+      tuesday: [],
+      wednesday: [],
+      thursday: [],
+      friday: [],
+      saturday: [],
+      sunday: [],
+    },
+    notes: 'Magasin en ligne, pas d’API externe en V1.',
   },
 ];
 
@@ -291,6 +354,7 @@ export const createDefaultData = (): AppData => ({
   shoppingItems: defaultShoppingItems(),
   mealPlan: [],
   consumptionHistory: [],
+  stores: defaultStores,
   storePriceRecords: [],
   updatedAt: nowIso(),
 });

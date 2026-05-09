@@ -15,6 +15,23 @@ export type ShoppingPriority = 'haute' | 'moyenne' | 'douce';
 export type StorageIcon = 'fridge' | 'shelves' | 'jar' | 'snowflake' | 'box';
 export type InventorySort = 'intelligent' | 'date' | 'nom' | 'favoris' | 'ajout récent';
 export type ConsumptionAction = 'consommé' | 'jeté' | 'cuisiné';
+export type Weekday = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
+export interface OpeningTimeRange {
+  open: string;
+  close: string;
+}
+
+export interface GroceryStore {
+  id: string;
+  name: string;
+  shortName: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  openingHours: Record<Weekday, OpeningTimeRange[]>;
+  notes?: string;
+}
 
 export type HealthCue =
   | 'Repas simple et équilibré'
@@ -73,6 +90,7 @@ export interface FoodItem {
   status: FoodStatus;
   owner: FoodOwner;
   purchasePrice?: number;
+  pricePerUnit?: number;
   notes: string;
   isFavorite?: boolean;
   reminderDaysBefore?: number;
@@ -149,6 +167,7 @@ export interface AppData {
   shoppingItems: ShoppingItem[];
   mealPlan: MealPlanItem[];
   consumptionHistory: ConsumptionHistoryItem[];
+  stores: GroceryStore[];
   storePriceRecords: StorePriceRecord[];
   updatedAt: string;
 }

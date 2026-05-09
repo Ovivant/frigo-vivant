@@ -17,16 +17,20 @@ import type {
   ConsumptionHistoryItem,
   FoodCategory,
   FoodItem,
+  GroceryStore,
+  OpeningTimeRange,
   MealSuggestion,
   ShoppingItem,
   StorageIcon,
+  StorePriceRecord,
   UserProfile,
+  Weekday,
 } from './types';
 
 const categoryFromIngredient = (name: string): FoodCategory => {
   const lower = name.toLowerCase();
   if (/pois|œuf|oeuf|tofu|lentille|poisson|poulet/.test(lower)) return 'Protéines';
-  if (/huile|riz|pâte|quinoa|graine|bocal/.test(lower)) return 'Épicerie sèche';
+  if (/huile|riz|pâte|pates|quinoa|graine|bocal|pain|épeautre|epeautre|brioche|blé|ble/.test(lower)) return 'Épicerie sèche';
   if (/fromage|yaourt|crème/.test(lower)) return 'Frais';
   return 'Fruits & légumes';
 };
@@ -43,6 +47,18 @@ const defaultExpirationDays = (category: FoodCategory) => {
   if (category === 'Surgelé') return 90;
   if (category === 'Fruits & légumes') return 6;
   return 7;
+};
+
+const containsGlutenToLimit = (value: string) => /blé|ble|épeautre|epeautre|pâtes|pates|pain|brioche/i.test(value);
+
+const normalizeStoreName = (value: string, stores: GroceryStore[], fallback: string) => {
+  const lower = value.toLowerCase();
+  const knownStore = stores.find((store) => lower.includes(store.shortName.toLowerCase()) || lower.includes(store.name.toLowerCase()));
+  if (knownStore) return knownStore.shortName;
+  if (lower.includes('rayols')) return 'Les Rayols';
+  if (lower.includes('biocoop')) return 'Biocoop';
+  if (lower.includes('fourche')) return 'La Fourche';
+  return fallback;
 };
 
 function App() {
@@ -161,26 +177,92 @@ function App() {
       .filter(Boolean)
       .map((line) => {
         const date = line.match(/\d{4}-\d{2}-\d{2}/)?.[0];
-        const quantity = Number(line.match(/(?:^|\s)(\d+(?:[,.]\d+)?)(?:\s|$)/)?.[1]?.replace(',', '.') ?? 1);
+        const relativeDateDays = Number(line.match(/\b(?:DLC|DDM)\s*(\d+)\s*j\b/i)?.[1]);
+        const weightKg = Number(line.match(/\b(\d+(?:[,.]\d+)?)\s*kg\b/i)?.[1]?.replace(',', '.') ?? NaN);
+        const weightGrams = Number(line.match(/\b(\d+(?:[,.]\d+)?)\s*g\b/i)?.[1]?.replace(',', '.') ?? NaN);
+        const totalPrice = Number(line.match(/\bprix\s*(\d+(?:[,.]\d+)?)\b/i)?.[1]?.replace(',', '.') ?? NaN);
+        const pricePerKg = Number(line.match(/\bprixkg\s*(\d+(?:[,.]\d+)?)\b/i)?.[1]?.replace(',', '.') ?? NaN);
+        const quantity = Number.isFinite(weightKg)
+          ? weightKg
+          : Number.isFinite(weightGrams)
+            ? weightGrams
+            : Number(line.match(/(?:^|\s)(\d+(?:[,.]\d+)?)(?:\s|$)/)?.[1]?.replace(',', '.') ?? 1);
+        const unit = Number.isFinite(weightKg) ? 'kg' : Number.isFinite(weightGrams) ? 'g' : undefined;
         const lowerLine = line.toLowerCase();
-        const location = data.storageLocations.find((item) => lowerLine.includes(item.name.toLowerCase())) ?? data.storageLocations.find((item) => item.id === 'frigo') ?? data.storageLocations[0];
+        const location =
+          data.storageLocations.find((item) => lowerLine.includes(item.name.toLowerCase())) ??
+          data.storageLocations.find((item) => item.id === (lowerLine.includes('placard') ? 'placards' : lowerLine.includes('congel') ? 'congelateur' : 'frigo')) ??
+          data.storageLocations[0];
+        const store = normalizeStoreName(line, data.stores, data.profile.favoriteStores[0] ?? '');
+        const isOrganic = /\b(bio|ab)\b/i.test(line);
         const cleanedName = line
           .replace(/\d{4}-\d{2}-\d{2}/g, '')
+          .replace(/\b(?:DLC|DDM)\s*\d+\s*j\b/gi, '')
+          .replace(/\bprixkg\s*\d+(?:[,.]\d+)?\b/gi, '')
+          .replace(/\bprix\s*\d+(?:[,.]\d+)?\b/gi, '')
+          .replace(/\b\d+(?:[,.]\d+)?\s*(kg|g)\b/gi, '')
+          .replace(/\b(bio|ab|rayols|biocoop|fourche)\b/gi, '')
           .replace(/(?:^|\s)\d+(?:[,.]\d+)?(?:\s|$)/, ' ')
           .replace(new RegExp(data.storageLocations.map((item) => item.name).join('|'), 'gi'), '')
           .trim();
         const food = createQuickFood(cleanedName || line);
+        const glutenNote = containsGlutenToLimit(line) ? ' Gluten à limiter.' : '';
 
         return {
           ...food,
           quantity,
+          unit: unit ?? food.unit,
           storageLocationId: location?.id ?? food.storageLocationId,
-          expirationDate: date ?? food.expirationDate,
-          notes: 'Ajout via scan manuel simplifié.',
+          expirationDate: date ?? (Number.isFinite(relativeDateDays) ? isoInDays(relativeDateDays) : food.expirationDate),
+          dateType: /DDM/i.test(line) ? 'DDM' : /DLC/i.test(line) ? 'DLC' : food.dateType,
+          isOrganic,
+          store,
+          purchasePrice: Number.isFinite(totalPrice) ? totalPrice : food.purchasePrice,
+          pricePerUnit: Number.isFinite(pricePerKg) ? pricePerKg : food.pricePerUnit,
+          notes: `Ajout via scan manuel simplifié.${glutenNote}`,
         };
       });
 
-    updateData((current) => ({ ...current, foods: [...foods, ...current.foods] }));
+    updateData((current) => {
+      const priceRecords: StorePriceRecord[] = foods
+        .filter((food) => typeof food.purchasePrice === 'number' || typeof food.pricePerUnit === 'number')
+        .map((food) => ({
+          id: newId('price'),
+          productName: food.name,
+          store: food.store,
+          price: food.purchasePrice ?? 0,
+          quantity: food.quantity,
+          unit: food.unit,
+          pricePerUnit: food.pricePerUnit ?? (food.purchasePrice && food.quantity ? food.purchasePrice / food.quantity : 0),
+          purchaseDate: new Date().toISOString().slice(0, 10),
+          isOrganic: food.isOrganic,
+          isLocal: food.isLocal,
+          source: 'ticket',
+        }));
+
+      return {
+        ...current,
+        foods: [...foods, ...current.foods],
+        storePriceRecords: [...priceRecords, ...current.storePriceRecords],
+      };
+    });
+  };
+
+  const updateStoreHours = (storeId: string, day: Weekday, ranges: OpeningTimeRange[]) => {
+    updateData((current) => ({
+      ...current,
+      stores: current.stores.map((store) =>
+        store.id === storeId
+          ? {
+              ...store,
+              openingHours: {
+                ...store.openingHours,
+                [day]: ranges,
+              },
+            }
+          : store,
+      ),
+    }));
   };
 
   const freezeFood = (foodId: string) => {
@@ -484,9 +566,11 @@ function App() {
           profile={data.profile}
           foods={data.foods}
           items={data.shoppingItems}
+          stores={data.stores}
           onTogglePurchased={toggleShoppingPurchased}
           onAddManualItem={addManualShoppingItem}
           onAddPurchasedToInventory={addPurchasedToInventory}
+          onUpdateStoreHours={updateStoreHours}
         />
       ) : null}
 
