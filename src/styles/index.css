@@ -37,7 +37,7 @@ button {
 
 @layer components {
   .app-panel {
-    @apply rounded-[8px] border border-clay-100/70 bg-white/82 shadow-soft backdrop-blur;
+    @apply rounded-[8px] border border-clay-100/70 bg-white/80 shadow-soft backdrop-blur;
   }
 
   .field {
