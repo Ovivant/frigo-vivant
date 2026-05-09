@@ -91,6 +91,7 @@ export interface FoodItem {
   owner: FoodOwner;
   purchasePrice?: number;
   pricePerUnit?: number;
+  pricePerUnitKind?: 'ticket' | 'calculé' | 'manuel';
   notes: string;
   isFavorite?: boolean;
   reminderDaysBefore?: number;

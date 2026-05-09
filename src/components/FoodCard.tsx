@@ -36,6 +36,7 @@ export function FoodCard({
   const location = locations.find((item) => item.id === food.storageLocationId);
   const urgency = getUrgencyLevel(food.expirationDate);
   const cue = foodHealthCue(food, profile);
+  const priceUnit = food.unit === 'L' || food.unit === 'ml' ? 'L' : 'kg';
 
   return (
     <article className="app-panel overflow-hidden">
@@ -106,7 +107,7 @@ export function FoodCard({
         <p className="text-sm leading-6 text-stone-600">
           {food.store ? `Acheté chez ${food.store}` : 'Magasin non renseigné'}
           {food.purchasePrice ? ` · ${formatCurrency(food.purchasePrice)}` : ''}
-          {food.pricePerUnit ? ` · ${formatCurrency(food.pricePerUnit)}/kg` : ''}
+          {food.pricePerUnit ? ` · ${formatCurrency(food.pricePerUnit)}/${priceUnit}${food.pricePerUnitKind === 'calculé' ? ' calculé' : ''}` : ''}
           {food.notes ? ` · ${food.notes}` : ''}
         </p>
 

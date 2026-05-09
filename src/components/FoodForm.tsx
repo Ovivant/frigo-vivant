@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Save, X } from 'lucide-react';
 import type { FoodCategory, FoodDateType, FoodItem, FoodOwner, FoodStatus, StorageLocation, UserProfile } from '../types';
 import { isoInDays } from '../lib/date';
-import { newId } from '../lib/format';
+import { formatDecimal, newId, parseFrenchDecimal } from '../lib/format';
 
 const categories: FoodCategory[] = ['Fruits & légumes', 'Frais', 'Épicerie sèche', 'Protéines', 'Surgelé', 'Autre'];
 const dateTypes: FoodDateType[] = ['DLC', 'DDM', 'ouverture', 'congélation'];
@@ -41,6 +41,9 @@ export function FoodForm({ food, profile, locations, onCancel, onSave }: FoodFor
       reminderDaysBefore: 3,
     },
   );
+  const [quantityText, setQuantityText] = useState(formatDecimal(draft.quantity));
+  const [purchasePriceText, setPurchasePriceText] = useState(formatDecimal(draft.purchasePrice, 2));
+  const [pricePerUnitText, setPricePerUnitText] = useState(formatDecimal(draft.pricePerUnit, 2));
 
   const update = <K extends keyof FoodItem>(key: K, value: FoodItem[K]) => setDraft((current) => ({ ...current, [key]: value }));
 
@@ -50,7 +53,21 @@ export function FoodForm({ food, profile, locations, onCancel, onSave }: FoodFor
       onSubmit={(event) => {
         event.preventDefault();
         if (!draft.name.trim()) return;
-        onSave({ ...draft, name: draft.name.trim() });
+        const quantity = parseFrenchDecimal(quantityText) ?? draft.quantity;
+        const purchasePrice = parseFrenchDecimal(purchasePriceText);
+        const manualPricePerUnit = parseFrenchDecimal(pricePerUnitText);
+        const normalizedQuantity = draft.unit === 'g' || draft.unit === 'ml' ? quantity / 1000 : quantity;
+        const calculatedPricePerUnit = purchasePrice && normalizedQuantity && ['kg', 'g', 'L', 'l', 'ml'].includes(draft.unit)
+          ? purchasePrice / normalizedQuantity
+          : undefined;
+        onSave({
+          ...draft,
+          name: draft.name.trim(),
+          quantity,
+          purchasePrice,
+          pricePerUnit: manualPricePerUnit ?? calculatedPricePerUnit,
+          pricePerUnitKind: manualPricePerUnit ? 'manuel' : calculatedPricePerUnit ? 'calculé' : draft.pricePerUnitKind,
+        });
       }}
     >
       <div className="flex items-start justify-between gap-3">
@@ -73,11 +90,10 @@ export function FoodForm({ food, profile, locations, onCancel, onSave }: FoodFor
           Quantité
           <input
             className="field mt-1"
-            type="number"
-            min="0"
-            step="0.1"
-            value={draft.quantity}
-            onChange={(event) => update('quantity', Number(event.target.value))}
+            type="text"
+            inputMode="decimal"
+            value={quantityText}
+            onChange={(event) => setQuantityText(event.target.value)}
           />
         </label>
         <label className="field-label">
@@ -153,17 +169,29 @@ export function FoodForm({ food, profile, locations, onCancel, onSave }: FoodFor
           </datalist>
         </label>
         <label className="field-label">
-          Prix optionnel
+          Prix total
           <input
             className="field mt-1"
-            type="number"
-            min="0"
-            step="0.01"
-            value={draft.purchasePrice ?? ''}
-            onChange={(event) => update('purchasePrice', event.target.value ? Number(event.target.value) : undefined)}
+            type="text"
+            inputMode="decimal"
+            value={purchasePriceText}
+            onChange={(event) => setPurchasePriceText(event.target.value)}
+            placeholder="Ex. 4,85"
           />
         </label>
       </div>
+
+      <label className="field-label">
+        Prix au kg / prix au litre
+        <input
+          className="field mt-1"
+          type="text"
+          inputMode="decimal"
+          value={pricePerUnitText}
+          onChange={(event) => setPricePerUnitText(event.target.value)}
+          placeholder="Ex. 5,90"
+        />
+      </label>
 
       <div className="grid grid-cols-2 gap-3">
         <label className="chip justify-start">
